@@ -198,7 +198,7 @@
 
 (defn draw-command [np w h]
   (vector
-   (Color. (rand-int 255) (rand-int 255) (rand-int 255) 50)
+   (Color. (rand-int 255) (rand-int 255) (rand-int 255) (rand-int 150))
    (apply vector (take np (repeatedly #(rand-int w))))
    (apply vector (take np (repeatedly #(rand-int w))))))
 
@@ -230,3 +230,115 @@
     (doseq [c cmds] (draw-one image c)) image))
 
 (save-buffered-image "output.png" (gen-image))
+
+;; Rotate pattern
+(defn draw-quadro []
+  (let [image (java.awt.image.BufferedImage. 800 800 java.awt.image.BufferedImage/TYPE_INT_ARGB)
+        cmds (list-of-commands 10)
+        draw-one (fn [image c xs ys]
+                   (let [graphics (.getGraphics image)]
+                    (.setColor graphics (java.awt.Color. (:r c) (:g c) (:b c) (:a c)))
+                    (.fillPolygon graphics
+                        (int-array xs)
+                        (int-array ys)
+                        (count xs))))]
+    (do (erase image)
+    (doseq [r (range 0 (* 2 (Math/PI)) (/ (Math/PI) 9.0))]
+      (let [nxs (map first (rotate r))
+            nys (map second (rotate r))
+            color (Color. (rand-int 255) (rand-int 255) (rand-int 255) 25)]
+      (draw-one image color (map #(+ 400 %) nxs) (map #(+ 400 %) nys))))) image))
+
+;; Rotate (x,y) f angles
+(map #(double (/ % 10)) (range (* 2 (Math/PI))))
+
+(range 0 6.2 0.1)
+
+(defn rotate [r]
+  (map #(vector (- (* (Math/cos r) %1) (* (Math/sin r) %2))
+                (+ (* (Math/sin r) %1) (* (Math/cos r) %2)))
+       [-220 220 220 -220] [220 220 -220 -220]))
+
+(save-buffered-image "output.png" (draw-quadro))
+
+;; Agent based JPanel
+
+(def width 900)
+(def height 600)
+
+(defn render
+ [g]
+ (let [img (new java.awt.image.BufferedImage width height
+                 (. java.awt.image.BufferedImage TYPE_INT_ARGB))
+       bg (. img (getGraphics))]
+   (doto bg
+      (.setColor (. java.awt.Color white))
+      (.fillRect 0 0 (. img (getWidth)) (. img (getHeight)))
+      (.setColor (. java.awt.Color red))
+      (.drawOval 200 200 (rand-int 100) (rand-int 50)))
+   (. g (drawImage img 0 0 nil))
+   (. bg (dispose))
+   ))
+
+(def panel (doto (proxy [javax.swing.JPanel] []
+                        (paint [g] (render g)))
+             (.setPreferredSize (new java.awt.Dimension
+                                     width
+                                     height))))
+(.setVisible panel true)
+(def animator (agent nil))
+
+(defn animation
+  [x]
+  (send-off *agent* #'animation)
+  (. panel (repaint))
+  (. Thread (sleep 100)))
+
+(send-off animator animation)
+
+(defmacro with-action [component event & body]
+  `(. ~component addActionListener
+      (proxy [java.awt.event.ActionListener] []
+        (actionPerformed [~event] ~@body))))
+
+(macroexpand '(with-action (javax.swing.JButton. "Start") e (send flipper start)))
+;;=> (. (javax.swing.JButton. "Start") user/addActionListener
+;;      (clojure.core/proxy [java.awt.event.ActionListener] []
+;;      (user/actionPerformed [e] (send flipper start))))
+
+;;=> (. (javax.swing.JButton. "Start") user/addActionListener
+;;      (clojure.core/proxy [java.awt.event.ActionListener] []
+;;      (user/actionPerformed [e])))
+
+(comment
+(def counter (agent 0))
+(send counter inc)
+@counter
+
+(add-watch a :key (fn [k r os ns] (print k r os ns)))
+)
+
+(let [click (ref nil)
+      panel (proxy [javax.swing.JPanel] []
+              (paintComponent [g]
+                (proxy-super paintComponent g)
+               ; (.drawImage g (.getImage
+                          ;  (javax.swing.ImageIcon. "play.png"))
+;                            0 0 (.getWidth this) (.getHeight this) nil)
+                (if @click
+                  (.fillRect g (:x @click) (:y @click) 10 10))))]
+  (.addMouseListener panel
+      (proxy [java.awt.event.MouseAdapter] []
+        (mouseClicked [e]
+          (let [p (.getPoint e)]
+            (dosync (ref-set click {:x (.x p), :y (.y p)})))
+          (javax.swing.SwingUtilities/invokeLater #(.repaint panel)))))
+  (doto (javax.swing.JFrame.)
+    (.setContentPane panel)
+    (.setSize 200 200)
+    (.show)))
+
+
+
+
+;; TODO - Simple 3D Engine
