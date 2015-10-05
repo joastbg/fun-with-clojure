@@ -63,6 +63,6 @@
 
 ;; sin
 
-(defn approx-cos-x [x n] 
-  (reduce + (map #(%1 %2) (my-cycle [- identity]) (take-nth 2 (map #(with-precision 99 (/ %1 %2)) 
+(defn approx-sin-x [x n] 
+  (reduce + (map #(%1 %2) (my-cycle [identity -]) (take-nth 2 (map #(with-precision 99 (/ %1 %2)) 
                                                                    (take n (xton x 1)) (facs 2M 1M))))))
