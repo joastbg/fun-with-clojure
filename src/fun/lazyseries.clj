@@ -74,3 +74,11 @@
 (defn approx-atan-x [x n] 
   (reduce + (map #(%1 %2) (my-cycle [identity -]) (take-nth 2 (map #(with-precision 99 (/ %1 %2)) 
                                                                    (take n (xton x 1))  (conj (xton2 1 2) 1))))))
+
+(time (first (repeatedly 9999 #(identity (approx-atan-x 0.5M 99M)))))
+"Elapsed time: 2.57714 msecs"
+0.4636476090008061162142562314612112656006176910191297442548267721583007584272759900629875195675024791456671244096311843195720792926M
+
+(time (first (repeatedly 9999 #(identity (Math/atan 0.5)))))
+"Elapsed time: 0.242525 msecs"
+0.4636476090008061
