@@ -6,6 +6,7 @@
 
 ;; Lazy sequence of x to the power of n
 (defn xton [x n] (cons (* x n) (lazy-seq (xton x (* x n)))))
+(defn xton2 [x n] (cons (* x n) (lazy-seq (xton2 x (+ n 1)))))
 
 (take 8 (xton 2 1))
 (take 8 (xton 3 1))
@@ -66,3 +67,10 @@
 (defn approx-sin-x [x n] 
   (reduce + (map #(%1 %2) (my-cycle [identity -]) (take-nth 2 (map #(with-precision 99 (/ %1 %2)) 
                                                                    (take n (xton x 1)) (facs 2M 1M))))))
+
+;; atan
+
+
+(defn approx-atan-x [x n] 
+  (reduce + (map #(%1 %2) (my-cycle [identity -]) (take-nth 2 (map #(with-precision 99 (/ %1 %2)) 
+                                                                   (take n (xton x 1))  (conj (xton2 1 2) 1))))))
