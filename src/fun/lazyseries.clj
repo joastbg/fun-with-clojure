@@ -4,6 +4,9 @@
 (defn facs [x s] (cons s (lazy-seq (facs (+ x 1) (* s x)))))
 (take 10 (facs 2 1))
 
+;; Lazy Fibonacci sequence
+(defn fib [a b] (lazy-seq (cons a (fib b (+ b a)))))
+
 ;; Lazy sequence of x to the power of n
 (defn xton [x n] (cons (* x n) (lazy-seq (xton x (* x n)))))
 (defn xton2 [x n] (cons (* x n) (lazy-seq (xton2 x (+ n 1)))))
